@@ -1,0 +1,758 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selenium Test Runner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-card {
+            transition: all 0.3s;
+        }
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .test-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .function-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Selenium Test Runner</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Available Tests</h5>
+                        <div>
+                            <button type="button" id="select-all-tests" class="btn btn-sm btn-outline-primary">Select All</button>
+                            <button type="button" id="deselect-all-tests" class="btn btn-sm btn-outline-secondary">Deselect All</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group test-list">
+                            <!-- Test list will be populated here -->
+                            <div class="d-flex justify-content-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Test Functions Section -->
+                        <div class="mt-3 function-list" id="function-list">
+                            <h6>Test Functions</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="run-all-functions" checked>
+                                <label class="form-check-label" for="run-all-functions">
+                                    Run All Functions
+                                </label>
+                            </div>
+                            <hr>
+                            <div id="test-functions" class="list-group">
+                                <!-- Test functions will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Test Options</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="test-options-form">
+                            <div class="mb-3">
+                                <label for="browser-select" class="form-label">Browser</label>
+                                <select class="form-select" id="browser-select">
+                                    <option value="chrome">Chrome</option>
+                                    <option value="firefox">Firefox</option>
+                                    <option value="edge">Edge</option>
+                                </select>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="headless-mode">
+                                <label class="form-check-label" for="headless-mode">Run in Headless Mode</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="max-workers" class="form-label">Max Parallel Workers</label>
+                                <input type="number" class="form-control" id="max-workers" min="1" max="10" value="3">
+                                <small class="text-muted">Used when multiple tests are selected</small>
+                            </div>
+                            <button type="button" id="run-selected-btn" class="btn btn-primary w-100" disabled>
+                                Run Selected Tests
+                            </button>
+                            <div id="execution-mode" class="text-center mt-2 small text-muted">
+                                Select tests to run
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Parallel Execution</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="parallel-test-form">
+                            <div class="mb-3">
+                                <label class="form-label">Selected Tests for Parallel Execution</label>
+                                <div id="parallel-test-list" class="list-group mb-2">
+                                    <div class="text-center text-muted">
+                                        <p>No tests selected for parallel execution</p>
+                                    </div>
+                                </div>
+                                <button type="button" id="add-to-parallel-btn" class="btn btn-sm btn-outline-primary w-100">
+                                    Add Selected Test to Parallel Queue
+                                </button>
+                            </div>
+                            <div class="mb-3">
+                                <label for="max-workers" class="form-label">Max Parallel Workers</label>
+                                <input type="number" class="form-control" id="max-workers" min="1" max="10" value="3">
+                                <small class="text-muted">Maximum number of tests to run in parallel</small>
+                            </div>
+                            <button type="button" id="run-parallel-btn" class="btn btn-success w-100" disabled>
+                                Run Tests in Parallel
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Test Results</h5>
+                        <div class="status-indicator">
+                            <span class="badge bg-secondary" id="status-badge">Idle</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="test-summary mb-3">
+                            <div class="row text-center">
+                                <div class="col">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h3 id="total-tests">0</h3>
+                                            <p class="mb-0">Total</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body">
+                                            <h3 id="passed-tests">0</h3>
+                                            <p class="mb-0">Passed</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="card bg-danger text-white">
+                                        <div class="card-body">
+                                            <h3 id="failed-tests">0</h3>
+                                            <p class="mb-0">Failed</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="test-results">
+                            <div class="list-group" id="result-list">
+                                <!-- Test results will be populated here -->
+                                <div class="text-center text-muted" id="no-results-message">
+                                    <p>No tests have been run yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Logs</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre id="test-logs" class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto;">
+Waiting for test execution...
+                        </pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for error details -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Test Failure Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Error Message</h6>
+                    <pre id="error-message" class="bg-light p-3 rounded"></pre>
+                    
+                    <div id="screenshot-container" class="mt-3">
+                        <h6>Failure Screenshot</h6>
+                        <img id="error-screenshot" class="img-fluid border rounded" src="" alt="Screenshot not available">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get DOM elements
+            const testList = document.querySelector('.test-list');
+            const functionList = document.getElementById('function-list');
+            const testFunctions = document.getElementById('test-functions');
+            const runAllFunctions = document.getElementById('run-all-functions');
+            const runSelectedBtn = document.getElementById('run-selected-btn');
+            const statusBadge = document.getElementById('status-badge');
+            const resultList = document.getElementById('result-list');
+            const noResultsMessage = document.getElementById('no-results-message');
+            const totalTests = document.getElementById('total-tests');
+            const passedTests = document.getElementById('passed-tests');
+            const failedTests = document.getElementById('failed-tests');
+            const testLogs = document.getElementById('test-logs');
+            const headlessMode = document.getElementById('headless-mode');
+            
+            // Error modal elements
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            const errorMessage = document.getElementById('error-message');
+            const errorScreenshot = document.getElementById('error-screenshot');
+            const screenshotContainer = document.getElementById('screenshot-container');
+
+            // Selected state
+            const selectedTests = new Set();
+            let selectedTestFile = null;
+            let currentRunId = null;
+            const selectedFunctions = new Set();
+            
+            // Fetch available tests
+            fetch('/api/tests')
+                .then(response => response.json())
+                .then(tests => {
+                    testList.innerHTML = '';
+                    
+                    if (tests.length === 0) {
+                        testList.innerHTML = '<div class="text-center text-muted"><p>No tests found</p></div>';
+                        return;
+                    }
+                    
+                    tests.forEach(test => {
+                        const listItem = document.createElement('div');
+                        listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                        listItem.dataset.path = test.path;
+                        listItem.dataset.name = test.name;
+                        
+                        // Test name with checkbox for multiple selection
+                        listItem.innerHTML = `
+                            <div class="form-check">
+                                <input class="form-check-input test-checkbox" type="checkbox" id="test-${test.name}" data-path="${test.path}">
+                                <label class="form-check-label" for="test-${test.name}">
+                                    ${test.name}
+                                </label>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary view-functions-btn">View Functions</button>
+                        `;
+                        
+                        // Add click handler for test selection
+                        const checkbox = listItem.querySelector('.test-checkbox');
+                        checkbox.addEventListener('change', function() {
+                            if (this.checked) {
+                                selectedTests.add(this.dataset.path);
+                            } else {
+                                selectedTests.delete(this.dataset.path);
+                            }
+                            
+                            runSelectedBtn.disabled = selectedTests.size === 0;
+                        });
+                        
+                        // Add click handler for viewing functions
+                        const viewFunctionsBtn = listItem.querySelector('.view-functions-btn');
+                        viewFunctionsBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            
+                            const testPath = this.closest('.list-group-item').dataset.path;
+                            selectedTestFile = testPath;
+                            
+                            // Fetch test functions for this file
+                            fetchTestFunctions(testPath);
+                        });
+                        
+                        testList.appendChild(listItem);
+                    });
+                    
+                    // Add select/deselect all functionality
+                    document.getElementById('select-all-tests').addEventListener('click', function() {
+                        document.querySelectorAll('.test-checkbox').forEach(checkbox => {
+                            checkbox.checked = true;
+                            selectedTests.add(checkbox.dataset.path);
+                        });
+                        runSelectedBtn.disabled = selectedTests.size === 0;
+                    });
+                    
+                    document.getElementById('deselect-all-tests').addEventListener('click', function() {
+                        document.querySelectorAll('.test-checkbox').forEach(checkbox => {
+                            checkbox.checked = false;
+                            selectedTests.delete(checkbox.dataset.path);
+                        });
+                        runSelectedBtn.disabled = true;
+                        
+                        // Hide function list when deselecting all
+                        functionList.style.display = 'none';
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching tests:', error);
+                    testList.innerHTML = '<div class="text-center text-danger"><p>Error loading tests</p></div>';
+                });
+
+            // Update the "Add to Parallel Queue" button handler
+            addToParallelBtn.addEventListener('click', function() {
+                if (selectedTests.size === 0) return;
+                
+                // Add all selected tests to parallel queue
+                selectedTests.forEach(testPath => {
+                    parallelTests.add(testPath);
+                });
+                
+                updateParallelTestList();
+            });
+
+            // Update run selected button handler to work with multiple selections
+            runSelectedBtn.addEventListener('click', function() {
+                if (selectedTests.size === 0) return;
+                
+                const browserType = document.getElementById('browser-select').value;
+                const isHeadless = headlessMode.checked;
+                
+                // Reset results display
+                statusBadge.textContent = 'Running';
+                statusBadge.className = 'badge bg-warning';
+                noResultsMessage.style.display = 'none';
+                resultList.innerHTML = '';
+                testLogs.textContent = 'Starting test execution...\n';
+                totalTests.textContent = '0';
+                passedTests.textContent = '0';
+                failedTests.textContent = '0';
+                
+                // If only one test is selected, use the function-specific API
+                if (selectedTests.size === 1 && selectedTestFile) {
+                    // Get the selected functions for the current test file
+                    const functions = Array.from(selectedFunctions);
+                    
+                    fetch('/api/run', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            path: selectedTestFile,
+                            browser: browserType,
+                            headless: isHeadless,
+                            functions: functions
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        currentRunId = data.run_id;
+                        testLogs.textContent += `Started test run ${data.run_id} for ${selectedTestFile}\n`;
+                        testLogs.textContent += `Running functions: ${functions.join(', ')}\n`;
+                        
+                        // Poll for results
+                        pollResults(data.run_id);
+                    })
+                    .catch(error => {
+                        console.error('Error starting test:', error);
+                        testLogs.textContent += `Error starting test ${selectedTestFile}: ${error.message}\n`;
+                    });
+                }
+                // If multiple tests are selected, use the parallel API
+                else {
+                    fetch('/api/run_parallel', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            paths: Array.from(selectedTests),
+                            browser: browserType,
+                            headless: isHeadless,
+                            max_workers: parseInt(maxWorkers.value, 10)
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const parallelRunId = data.parallel_run_id;
+                        testLogs.textContent += `Started parallel test run ${parallelRunId} with ${data.test_count} tests\n`;
+                        
+                        // Poll for parallel results
+                        pollParallelResults(parallelRunId);
+                    })
+                    .catch(error => {
+                        console.error('Error starting tests:', error);
+                        testLogs.textContent += `Error starting tests: ${error.message}\n`;
+                    });
+                }
+            });
+
+            
+            // Fetch test functions for a specific file
+            function fetchTestFunctions(testPath) {
+                // In a real implementation, you would make an API call here
+                // For demo purposes, we'll simulate it
+                
+                // Show the function list section
+                functionList.style.display = 'block';
+                
+                // Clear current functions
+                testFunctions.innerHTML = '';
+                selectedFunctions.clear();
+                
+                // Make API call to get functions
+                fetch(`/api/test_functions?path=${encodeURIComponent(testPath)}`)
+                    .then(response => response.json())
+                    .then(functions => {
+                        if (functions.length === 0) {
+                            testFunctions.innerHTML = '<div class="text-center text-muted"><p>No test functions found</p></div>';
+                            return;
+                        }
+                        
+                        functions.forEach(func => {
+                            const functionItem = document.createElement('div');
+                            functionItem.classList.add('form-check');
+                            
+                            functionItem.innerHTML = `
+                                <input class="form-check-input function-checkbox" type="checkbox" id="func-${func}" 
+                                       data-function="${func}" ${runAllFunctions.checked ? 'checked' : ''}>
+                                <label class="form-check-label" for="func-${func}">
+                                    ${func}
+                                </label>
+                            `;
+                            
+                            testFunctions.appendChild(functionItem);
+                            
+                            if (runAllFunctions.checked) {
+                                selectedFunctions.add(func);
+                            }
+                        });
+                        
+                        // Add event listeners to function checkboxes
+                        document.querySelectorAll('.function-checkbox').forEach(checkbox => {
+                            checkbox.addEventListener('change', function() {
+                                if (this.checked) {
+                                    selectedFunctions.add(this.dataset.function);
+                                } else {
+                                    selectedFunctions.delete(this.dataset.function);
+                                }
+                                
+                                // If all are selected, check the "Run All" checkbox
+                                const allCheckboxes = document.querySelectorAll('.function-checkbox');
+                                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                                runAllFunctions.checked = allChecked;
+                                
+                                // If none are selected, disable run button
+                                runSelectedBtn.disabled = selectedFunctions.size === 0;
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching test functions:', error);
+                        testFunctions.innerHTML = '<div class="text-center text-danger"><p>Error loading test functions</p></div>';
+                    });
+            }
+            
+            // Run All Functions checkbox handler
+            runAllFunctions.addEventListener('change', function() {
+                const functionCheckboxes = document.querySelectorAll('.function-checkbox');
+                
+                functionCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                    
+                    if (this.checked) {
+                        selectedFunctions.add(checkbox.dataset.function);
+                    } else {
+                        selectedFunctions.delete(checkbox.dataset.function);
+                    }
+                });
+                
+                // If none are selected, disable run button
+                runSelectedBtn.disabled = selectedFunctions.size === 0;
+            });
+           
+            // Poll for test results
+            function pollResults(runId) {
+                const interval = setInterval(() => {
+                    fetch(`/api/results/${runId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'completed') {
+                                clearInterval(interval);
+                                
+                                // Update logs
+                                testLogs.textContent += `Test run ${runId} completed\n`;
+                                
+                                // Update summary counters
+                                const results = data.results;
+                                totalTests.textContent = results.total;
+                                passedTests.textContent = results.passed;
+                                failedTests.textContent = results.failed;
+                                
+                                // Add results to the list
+                                results.tests.forEach(test => {
+                                    const resultItem = document.createElement('div');
+                                    resultItem.classList.add('list-group-item', 'test-result');
+                                    
+                                    if (test.status === 'passed') {
+                                        resultItem.classList.add('list-group-item-success');
+                                    } else {
+                                        resultItem.classList.add('list-group-item-danger');
+                                    }
+                                    
+                                    resultItem.innerHTML = `
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">${test.name}</h6>
+                                            <span class="badge ${test.status === 'passed' ? 'bg-success' : 'bg-danger'}">${test.status}</span>
+                                        </div>
+                                        <small class="text-muted">From: ${selectedTestFile}</small>
+                                    `;
+                                    
+                                    // Add click handler for failed tests
+                                    if (test.status === 'failed') {
+                                        resultItem.style.cursor = 'pointer';
+                                        resultItem.addEventListener('click', () => {
+                                            errorMessage.textContent = test.error || 'No error details available';
+                                            
+                                            if (test.screenshot) {
+                                                errorScreenshot.src = `/screenshots/${test.screenshot}`;
+                                                screenshotContainer.style.display = 'block';
+                                            } else {
+                                                screenshotContainer.style.display = 'none';
+                                            }
+                                            
+                                            errorModal.show();
+                                        });
+                                    }
+                                    
+                                    resultList.appendChild(resultItem);
+                                });
+                                
+                                // Update status
+                                statusBadge.textContent = 'Completed';
+                                statusBadge.className = 'badge bg-success';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error polling results:', error);
+                            testLogs.textContent += `Error polling results for run ${runId}: ${error.message}\n`;
+                            clearInterval(interval);
+                        });
+                }, 1000);
+            }
+        });
+    </script>
+    <script>
+        // Add these variables at the top of your existing script section
+        const parallelTestList = document.getElementById('parallel-test-list');
+        const addToParallelBtn = document.getElementById('add-to-parallel-btn');
+        const runParallelBtn = document.getElementById('run-parallel-btn');
+        const executionMode = document.getElementById('execution-mode');
+        const maxWorkers = document.getElementById('max-workers');
+        let testExecutionMode = 'single'; // 'single' or 'parallel'
+        const parallelTests = new Set();
+
+        // Function to update the execution mode based on selected tests
+        function updateExecutionMode() {
+            if (selectedTests.size === 0) {
+                executionMode.textContent = 'Select tests to run';
+                runSelectedBtn.disabled = true;
+                testExecutionMode = 'single';
+            } else if (selectedTests.size === 1) {
+                executionMode.textContent = 'Mode: Single Test Execution';
+                runSelectedBtn.disabled = false;
+                testExecutionMode = 'single';
+            } else {
+                executionMode.textContent = `Mode: Parallel Execution (${selectedTests.size} tests)`;
+                runSelectedBtn.disabled = false;
+                testExecutionMode = 'parallel';
+            }
+        }       
+
+        // Add event listener for "Add to Parallel Queue" button
+        addToParallelBtn.addEventListener('click', function() {
+            if (selectedTestFile) {
+                // Add to parallel tests if not already added
+                if (!parallelTests.has(selectedTestFile)) {
+                    parallelTests.add(selectedTestFile);
+                    updateParallelTestList();
+                }
+            }
+        });
+        
+        // Function to update the parallel test list display
+        function updateParallelTestList() {
+            if (parallelTests.size === 0) {
+                parallelTestList.innerHTML = `
+                    <div class="text-center text-muted">
+                        <p>No tests selected for parallel execution</p>
+                    </div>
+                `;
+                runParallelBtn.disabled = true;
+            } else {
+                parallelTestList.innerHTML = '';
+                
+                parallelTests.forEach(testPath => {
+                    const testItem = document.createElement('div');
+                    testItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                    
+                    testItem.innerHTML = `
+                        <span>${testPath}</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-test" data-path="${testPath}">
+                            Remove
+                        </button>
+                    `;
+                    
+                    parallelTestList.appendChild(testItem);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-test').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const testPath = this.dataset.path;
+                        parallelTests.delete(testPath);
+                        updateParallelTestList();
+                    });
+                });
+                
+                runParallelBtn.disabled = false;
+            }
+        }
+        
+  
+        // Poll for parallel test results
+        function pollParallelResults(parallelRunId) {
+            const interval = setInterval(() => {
+                fetch(`/api/parallel_results/${parallelRunId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'completed') {
+                            clearInterval(interval);
+                            
+                            // Update logs
+                            testLogs.textContent += `Parallel test run ${parallelRunId} completed\n`;
+                            
+                            // Update summary counters
+                            const results = data.results;
+                            totalTests.textContent = results.total;
+                            passedTests.textContent = results.passed;
+                            failedTests.textContent = results.failed;
+                            
+                            // Add results to the list
+                            results.tests.forEach(test => {
+                                const resultItem = document.createElement('div');
+                                resultItem.classList.add('list-group-item', 'test-result');
+                                
+                                if (test.status === 'passed') {
+                                    resultItem.classList.add('list-group-item-success');
+                                } else {
+                                    resultItem.classList.add('list-group-item-danger');
+                                }
+                                
+                                // Find the test file this test belongs to
+                                let testFile = '';
+                                for (const [path, fileResult] of Object.entries(results.test_files)) {
+                                    if (fileResult.run_id === test.run_id || test.name.includes(path)) {
+                                        testFile = path;
+                                        break;
+                                    }
+                                }
+                                
+                                resultItem.innerHTML = `
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">${test.name}</h6>
+                                        <span class="badge ${test.status === 'passed' ? 'bg-success' : 'bg-danger'}">${test.status}</span>
+                                    </div>
+                                    <small class="text-muted">From: ${testFile}</small>
+                                `;
+                                
+                                // Add click handler for failed tests
+                                if (test.status === 'failed') {
+                                    resultItem.style.cursor = 'pointer';
+                                    resultItem.addEventListener('click', () => {
+                                        errorMessage.textContent = test.error || 'No error details available';
+                                        
+                                        if (test.screenshot) {
+                                            errorScreenshot.src = `/screenshots/${test.screenshot}`;
+                                            screenshotContainer.style.display = 'block';
+                                        } else {
+                                            screenshotContainer.style.display = 'none';
+                                        }
+                                        
+                                        errorModal.show();
+                                    });
+                                }
+                                
+                                resultList.appendChild(resultItem);
+                            });
+                            
+                            // Update status
+                            statusBadge.textContent = 'Completed';
+                            statusBadge.className = 'badge bg-success';
+                        } else if (data.status === 'running') {
+                            // Check if there's any progress information in the results
+                            if (data.results && data.results.test_files) {
+                                const fileStatus = Object.values(data.results.test_files);
+                                const completed = fileStatus.filter(f => f.status === 'completed').length;
+                                const total = Object.keys(data.results.test_files).length;
+                                
+                                statusBadge.textContent = `Running (${completed}/${total})`;
+                                testLogs.textContent += `Progress: ${completed}/${total} test files completed\n`;
+                                
+                                // Update counts if available
+                                if (data.results.passed !== undefined) {
+                                    totalTests.textContent = data.results.total || 0;
+                                    passedTests.textContent = data.results.passed || 0;
+                                    failedTests.textContent = data.results.failed || 0;
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error polling parallel results:', error);
+                        testLogs.textContent += `Error polling parallel results for run ${parallelRunId}: ${error.message}\n`;
+                        clearInterval(interval);
+                    });
+            }, 1500);  // Poll every 1.5 seconds to avoid overwhelming the server
+        }
+    </script>
+</body>
+</html>

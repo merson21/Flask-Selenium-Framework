@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment (replace ".myenv" with your actual folder name)
+.myenv/
+venv/
+env/
+
+# Environment variables
+.env
+*.env
+
+# Logs and databases
+*.log
+*.sqlite3
+instance/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.iml
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Compiled C extensions
+*.so
+
+# Folder with test data
+screenshots/
+tests_copy/

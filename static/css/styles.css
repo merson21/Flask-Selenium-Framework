@@ -1,0 +1,91 @@
+/* Base Styles */
+.test-card {
+    transition: all 0.3s;
+}
+.test-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.status-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+.test-results {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.function-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+/* Test Table Styles */
+.test-table {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+.test-table .card-header {
+    background-color: #f8f9fa;
+    padding: 0.75rem 1rem;
+}
+.test-table table {
+    margin-bottom: 0;
+}
+.function-row-passed {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+.function-row-failed {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+.function-row-running {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+.function-status {
+    font-weight: bold;
+    display: inline-block;
+    width: 80px;
+    text-align: center;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+.status-passed {
+    background-color: #198754;
+    color: white;
+}
+.status-failed {
+    background-color: #dc3545;
+    color: white;
+}
+.status-running {
+    background-color: #ffc107;
+    color: black;
+}
+.status-pending {
+    background-color: #6c757d;
+    color: white;
+}
+.test-progress {
+    height: 5px;
+    margin-top: 5px;
+}
+
+/* Log Section */
+#test-logs {
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+}
+
+/* Error Modal */
+#error-message {
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+}
