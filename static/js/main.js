@@ -86,8 +86,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     checkbox.addEventListener('change', function() {
                         if (this.checked) {
                             selectedTests.add(this.dataset.path);
+                            
+                            // When checkbox is checked, automatically view functions
+                            selectedTestFile = this.dataset.path;
+                            fetchTestFunctions(this.dataset.path);
                         } else {
                             selectedTests.delete(this.dataset.path);
+                            
+                            // If this was the currently viewed test and is now unchecked,
+                            // hide the function list if no other tests are selected
+                            if (selectedTestFile === this.dataset.path) {
+                                // Check if there are any other selected tests
+                                if (selectedTests.size > 0) {
+                                    // If so, display the functions for the first selected test
+                                    const nextTestPath = Array.from(selectedTests)[0];
+                                    selectedTestFile = nextTestPath;
+                                    fetchTestFunctions(nextTestPath);
+                                } else {
+                                    // Otherwise, hide the function list
+                                    functionList.style.display = 'none';
+                                    selectedTestFile = null;
+                                }
+                            }
                         }
                         
                         updateExecutionMode();
@@ -99,10 +119,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         e.preventDefault();
                         
                         const testPath = this.closest('.list-group-item').dataset.path;
+                        console.log("Viewing functions for:", testPath);
+                        
+                        // Set the selectedTestFile
                         selectedTestFile = testPath;
                         
                         // Fetch test functions for this file
                         fetchTestFunctions(testPath);
+                        
+                        // Make sure function list is visible
+                        functionList.style.display = 'block';
                     });
                     
                     testList.appendChild(listItem);
@@ -122,6 +148,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show the function list section
         functionList.style.display = 'block';
         
+         // Update the current test label
+        const testName = testPath.split('/').pop().replace('.py', '');
+        document.getElementById('current-test-label').textContent = `${testName}`;
+
         // Clear current functions display
         testFunctions.innerHTML = '';
         

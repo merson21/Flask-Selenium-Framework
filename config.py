@@ -9,7 +9,7 @@ class Config:
     DEFAULT_BROWSER = "chrome"
     HEADLESS = os.environ.get("HEADLESS", "True").lower() == "false"
     IMPLICIT_WAIT = int(os.environ.get("IMPLICIT_WAIT", "10"))
-    PAGE_LOAD_TIMEOUT = int(os.environ.get("PAGE_LOAD_TIMEOUT", "30"))
+    PAGE_LOAD_TIMEOUT = int(os.environ.get("PAGE_LOAD_TIMEOUT", "120"))
     
     # Screenshot settings
     SCREENSHOT_DIR = os.environ.get("SCREENSHOT_DIR", "screenshots")
@@ -18,3 +18,7 @@ class Config:
     # Retry settings
     MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "3"))
     RETRY_DELAY = int(os.environ.get("RETRY_DELAY", "1"))
+
+    # Login Credentials
+    LOGIN_USERNAME = "tomsmith"
+    LOGIN_PASSWORD = "SuperSecretPassword!"
