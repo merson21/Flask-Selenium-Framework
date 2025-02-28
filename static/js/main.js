@@ -242,8 +242,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Process each test result
                         results.tests.forEach(test => {
-                            // Extract function name
+                            // Extract function name - improved to avoid duplicates
                             let funcName = test.name;
+                            
+                            // Only take the part after the last dot if it contains a dot
+                            if (funcName.includes('.')) {
+                                funcName = funcName.substring(funcName.lastIndexOf('.') + 1);
+                            }
+                            
+                            // Remove 'test_' prefix if it exists
                             if (funcName.startsWith('test_')) {
                                 funcName = funcName.substring(5);
                             }
@@ -276,8 +283,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Process each test result
                         results.tests.forEach(test => {
-                            // Extract function name
+                            // Extract function name - improved to avoid duplicates
                             let funcName = test.name;
+                            
+                            // Only take the part after the last dot if it contains a dot
+                            if (funcName.includes('.')) {
+                                funcName = funcName.substring(funcName.lastIndexOf('.') + 1);
+                            }
+                            
+                            // Remove 'test_' prefix if it exists
                             if (funcName.startsWith('test_')) {
                                 funcName = funcName.substring(5);
                             }
@@ -566,7 +580,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // If specific functions are selected for this test, show them
                 if (testFunctionsDict[testPath]) {
                     testFunctionsDict[testPath].forEach(func => {
-                        const rowId = addFunctionRow(tableId, func);
+                        // Normalize function name
+                        let normalizedFunc = func;
+                        if (normalizedFunc.startsWith('test_')) {
+                            normalizedFunc = normalizedFunc.substring(5);
+                        }
+                        
+                        const rowId = addFunctionRow(tableId, normalizedFunc);
                         updateFunctionStatus(rowId, 'pending');
                     });
                 }

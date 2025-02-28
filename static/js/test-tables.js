@@ -56,12 +56,21 @@ function createTestTable(testName, testPath) {
  * @param {string} functionName - Name of the function
  * @returns {string} - ID of the created row
  */
+
 function addFunctionRow(tableId, functionName) {
     const table = document.getElementById(tableId);
     if (!table) return null;
     
     const tbody = table.querySelector('tbody');
-    const rowId = `${tableId}-func-${functionName.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '')}`;
+    
+    // Normalize function name to prevent duplicates
+    let normalizedName = functionName;
+    if (normalizedName.startsWith('test_')) {
+        normalizedName = normalizedName.substring(5);
+    }
+    
+    // Create a unique ID for this row
+    const rowId = `${tableId}-func-${normalizedName.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '')}`;
     
     // Check if row already exists
     if (document.getElementById(rowId)) {
@@ -73,7 +82,7 @@ function addFunctionRow(tableId, functionName) {
     row.className = 'function-row-running';
     
     row.innerHTML = `
-        <td>${functionName}</td>
+        <td>${normalizedName}</td>
         <td><span class="function-status status-running">Running</span></td>
     `;
     
