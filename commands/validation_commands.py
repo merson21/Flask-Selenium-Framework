@@ -165,7 +165,7 @@ class ValidationCommands:
         Returns:
             True if checkbox is checked, False otherwise
         """
-        from .form_commands import FormCommands
+        from commands.form_commands import FormCommands
         form_commands = FormCommands(self.driver, self.config)
         by_method, selector_value = self.element_commands._parse_selector(selector, selector_type)
         result = form_commands.is_checked(selector, selector_type, timeout)
@@ -184,7 +184,7 @@ class ValidationCommands:
         Returns:
             True if checkbox is not checked, False otherwise
         """
-        from .form_commands import FormCommands
+        from commands.form_commands import FormCommands
         form_commands = FormCommands(self.driver, self.config)
         by_method, selector_value = self.element_commands._parse_selector(selector, selector_type)
         result = not form_commands.is_checked(selector, selector_type, timeout)

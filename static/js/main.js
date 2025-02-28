@@ -235,6 +235,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Store the test path when starting the poll, so we don't rely on selectedTestFile later
+        const testPath = selectedTestFile; 
+        
         const interval = setInterval(() => {
             fetch(`/api/results/${runId}`)
                 .then(response => {
@@ -253,42 +256,49 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
+                    // Get test name from the stored path, not selectedTestFile which might change
+                    let testName = "Unknown Test";
+                    if (testPath) {
+                        testName = testPath.split('/').pop().replace('.py', '');
+                    }
+                    
                     // Handle in-progress results
                     if (data.status === 'running' && data.results) {
                         // Update summary counters with current progress
-                        const results = data.results;
+                        const results = data.results || { total: 0, passed: 0, failed: 0, tests: [] };
                         totalTests.textContent = results.total || 0;
                         passedTests.textContent = results.passed || 0;
                         failedTests.textContent = results.failed || 0;
                         
                         // Create test table if it doesn't exist
-                        const testName = selectedTestFile.split('/').pop().replace('.py', '');
-                        const tableId = createTestTable(testName, selectedTestFile);
+                        const tableId = createTestTable(testName, testPath || "unknown-path");
                         
                         // Update test table status
                         updateTestTableStatus(tableId, 'running', 
-                            results.passed + results.failed, 
-                            results.total);
+                            (results.passed || 0) + (results.failed || 0), 
+                            results.total || 0);
                         
-                        // Process each test result
-                        results.tests.forEach(test => {
-                            // Extract function name - improved to avoid duplicates
-                            let funcName = test.name;
-                            
-                            // Only take the part after the last dot if it contains a dot
-                            if (funcName.includes('.')) {
-                                funcName = funcName.substring(funcName.lastIndexOf('.') + 1);
-                            }
-                            
-                            // Remove 'test_' prefix if it exists
-                            if (funcName.startsWith('test_')) {
-                                funcName = funcName.substring(5);
-                            }
-                            
-                            // Add/update function row
-                            const rowId = addFunctionRow(tableId, funcName);
-                            updateFunctionStatus(rowId, test.status, test.error);
-                        });
+                        // Process each test result if available
+                        if (results.tests && Array.isArray(results.tests)) {
+                            results.tests.forEach(test => {
+                                // Extract function name
+                                let funcName = test.name || "Unknown Function";
+                                
+                                // Only take the part after the last dot if it contains a dot
+                                if (funcName.includes('.')) {
+                                    funcName = funcName.substring(funcName.lastIndexOf('.') + 1);
+                                }
+                                
+                                // Remove 'test_' prefix if it exists
+                                if (funcName.startsWith('test_')) {
+                                    funcName = funcName.substring(5);
+                                }
+                                
+                                // Add/update function row
+                                const rowId = addFunctionRow(tableId, funcName);
+                                updateFunctionStatus(rowId, test.status || 'running', test.error);
+                            });
+                        }
                     }
                     // Handle completed results
                     else if (data.status === 'completed') {
@@ -298,42 +308,72 @@ document.addEventListener('DOMContentLoaded', function() {
                         testLogs.textContent += `Test run ${runId} completed\n`;
                         
                         // Update summary counters
-                        const results = data.results;
-                        totalTests.textContent = results.total;
-                        passedTests.textContent = results.passed;
-                        failedTests.textContent = results.failed;
+                        const results = data.results || { total: 0, passed: 0, failed: 0, tests: [] };
+                        totalTests.textContent = results.total || 0;
+                        passedTests.textContent = results.passed || 0;
+                        failedTests.textContent = results.failed || 0;
                         
                         // Create/update test table
-                        const testName = selectedTestFile.split('/').pop().replace('.py', '');
-                        const tableId = createTestTable(testName, selectedTestFile);
+                        const tableId = createTestTable(testName, testPath || "unknown-path");
                         
                         // Update test table status
-                        const status = results.failed > 0 ? 'failed' : 'passed';
-                        updateTestTableStatus(tableId, status, results.total, results.total);
+                        const status = (results.failed > 0) ? 'failed' : 'passed';
+                        updateTestTableStatus(tableId, status, results.total || 0, results.total || 0);
                         
-                        // Process each test result
-                        results.tests.forEach(test => {
-                            // Extract function name - improved to avoid duplicates
-                            let funcName = test.name;
-                            
-                            // Only take the part after the last dot if it contains a dot
-                            if (funcName.includes('.')) {
-                                funcName = funcName.substring(funcName.lastIndexOf('.') + 1);
-                            }
-                            
-                            // Remove 'test_' prefix if it exists
-                            if (funcName.startsWith('test_')) {
-                                funcName = funcName.substring(5);
-                            }
-                            
-                            // Add/update function row
-                            const rowId = addFunctionRow(tableId, funcName);
-                            updateFunctionStatus(rowId, test.status, test.error);
-                        });
+                        // Process each test result if available
+                        if (results.tests && Array.isArray(results.tests)) {
+                            results.tests.forEach(test => {
+                                // Extract function name
+                                let funcName = test.name || "Unknown Function";
+                                
+                                // Only take the part after the last dot if it contains a dot
+                                if (funcName.includes('.')) {
+                                    funcName = funcName.substring(funcName.lastIndexOf('.') + 1);
+                                }
+                                
+                                // Remove 'test_' prefix if it exists
+                                if (funcName.startsWith('test_')) {
+                                    funcName = funcName.substring(5);
+                                }
+                                
+                                // Add/update function row
+                                const rowId = addFunctionRow(tableId, funcName);
+                                updateFunctionStatus(rowId, test.status || 'failed', test.error);
+                            });
+                        } else if (results.error) {
+                            // If we have an error but no tests, show it in the table
+                            const rowId = addFunctionRow(tableId, "Test execution error");
+                            updateFunctionStatus(rowId, 'failed', results.error);
+                        } else {
+                            // If we have neither tests nor errors, show a generic message
+                            const rowId = addFunctionRow(tableId, "No test results available");
+                            updateFunctionStatus(rowId, 'failed', "No test results were returned from the server");
+                        }
                         
                         // Update status
                         statusBadge.textContent = 'Completed';
                         statusBadge.className = 'badge bg-success';
+                        
+                        // Auto-scroll logs to bottom
+                        testLogs.scrollTop = testLogs.scrollHeight;
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        
+                        // Update logs
+                        testLogs.textContent += `Test run ${runId} encountered an error\n`;
+                        
+                        // Create/update test table to show error
+                        const tableId = createTestTable(testName, testPath || "unknown-path");
+                        updateTestTableStatus(tableId, 'failed', 0, 1);
+                        
+                        // Add error row
+                        const errorMessage = data.error || "Unknown error occurred";
+                        const rowId = addFunctionRow(tableId, "Error");
+                        updateFunctionStatus(rowId, 'failed', errorMessage);
+                        
+                        // Update status
+                        statusBadge.textContent = 'Error';
+                        statusBadge.className = 'badge bg-danger';
                         
                         // Auto-scroll logs to bottom
                         testLogs.scrollTop = testLogs.scrollHeight;
@@ -343,9 +383,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error polling results:', error);
                     testLogs.textContent += `Error polling results for run ${runId}: ${error.message}\n`;
                     clearInterval(interval);
+                    
+                    // Auto-scroll logs to bottom
+                    testLogs.scrollTop = testLogs.scrollHeight;
                 });
         }, 500); // Poll every 500ms for more responsive updates
     }
+
     
     /**
      * Polls for parallel test results

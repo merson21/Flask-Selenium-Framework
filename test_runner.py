@@ -86,18 +86,17 @@ class TestRunner:
             result['error'] = error_message
             
             if self.config.TAKE_SCREENSHOT_ON_FAILURE and hasattr(self, 'browser'):
-                from .utils.helpers import take_screenshot
+                from utils.helpers import take_screenshot
                 screenshot_path = take_screenshot(self.browser, f"failure_{test_name}")
                 logger.info(f"Failure screenshot saved: {screenshot_path}")
-                result['screenshot'] = screenshot_path
-        
+                result['screenshot'] = screenshot_path   
         return result
 
 
     
     def run_test_file(self, test_file_path):
         """
-        Run all tests in a test file
+        Run all tests in a test file, continuing even if some tests fail
         """
         logger.info(f"Running tests from file: {test_file_path}")
         
@@ -113,16 +112,46 @@ class TestRunner:
             if name.startswith('test_') and callable(obj):
                 test_functions.append(obj)
         
-        # Run each test function
+        # Setup the environment once for all tests
         self.setup()
+        
+        results = {
+            'total': len(test_functions),
+            'passed': 0,
+            'failed': 0,
+            'skipped': 0,
+            'tests': []
+        }
+        
         try:
-            for test_function in test_functions:
-                self.run_test(test_function)
+            # Run each test function, continuing even if some fail
+            for func in test_functions:
+                try:
+                    result = self.run_test(func)
+                    results['tests'].append(result)
+                    
+                    # Update counters
+                    if result['status'] == 'passed':
+                        results['passed'] += 1
+                    elif result['status'] == 'failed':
+                        results['failed'] += 1
+                    else:
+                        results['skipped'] += 1
+                except Exception as e:
+                    # If run_test itself throws an exception, log it but continue
+                    logger.error(f"Error running test {func.__name__}: {str(e)}")
+                    results['failed'] += 1
+                    results['tests'].append({
+                        'name': func.__name__,
+                        'status': 'failed',
+                        'error': str(e)
+                    })
         finally:
+            # Always clean up
             self.teardown()
         
-        return self.results
-    
+        return results
+        
     def run_test_directory(self, directory_path):
         """
         Run all tests in a directory
