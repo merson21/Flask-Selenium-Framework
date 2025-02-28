@@ -256,6 +256,7 @@ def register_test_api_routes(app):
         browser_type = data.get('browser', 'chrome')
         headless_mode = data.get('headless', False)
         max_workers = data.get('max_workers', 3)  # Default to 3 parallel workers
+        test_functions = data.get('test_functions', {})  # Dictionary of selected functions per test
         
         if not test_paths or not isinstance(test_paths, list):
             return jsonify({'error': 'No test paths provided or invalid format'}), 400
@@ -314,18 +315,22 @@ def register_test_api_routes(app):
                             module = importlib.util.module_from_spec(spec)
                             spec.loader.exec_module(module)
                             
-                            # Find all test functions
-                            test_functions = []
+                            # Find all test functions - respect selected functions if any
+                            test_functions_to_run = []
+                            selected_funcs = test_functions.get(test_path, [])
+                            
                             for name, obj in inspect.getmembers(module):
                                 if name.startswith('test_') and callable(obj):
-                                    test_functions.append(obj)
+                                    # If specific functions are selected, only run those
+                                    if not selected_funcs or name in selected_funcs:
+                                        test_functions_to_run.append(obj)
                             
                             # Update total count in combined results
-                            combined_results['test_files'][test_path]['total'] = len(test_functions)
+                            combined_results['test_files'][test_path]['total'] = len(test_functions_to_run)
                             
                             # Initialize results
                             results = {
-                                'total': len(test_functions),
+                                'total': len(test_functions_to_run),
                                 'passed': 0,
                                 'failed': 0,
                                 'skipped': 0,
@@ -333,7 +338,7 @@ def register_test_api_routes(app):
                             }
                             
                             # Run each test function
-                            for func in test_functions:
+                            for func in test_functions_to_run:
                                 # Run the test and get result
                                 result = runner.run_test(func)
                                 
@@ -453,7 +458,7 @@ def register_test_api_routes(app):
             'test_count': len(test_paths)
         })
 
-
+        
     @app.route('/api/parallel_results/<parallel_run_id>', methods=['GET'])
     def get_parallel_results(parallel_run_id):
         """

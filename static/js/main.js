@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedTests = new Set();
     let selectedTestFile = null;
     let currentRunId = null;
-    const selectedFunctions = new Set();
+    let selectedFunctions = new Set();
     let testExecutionMode = 'single'; // 'single' or 'parallel'
     // To store selected functions per test file
     const selectedFunctionsByTest = {};
@@ -133,9 +133,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Make API call to get functions
         fetch(`/api/test_functions?path=${encodeURIComponent(testPath)}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(functions => {
-                if (functions.length === 0) {
+                console.log("Fetched functions:", functions); // Debug log
+                
+                if (!Array.isArray(functions) || functions.length === 0) {
                     testFunctions.innerHTML = '<div class="text-center text-muted"><p>No test functions found</p></div>';
                     return;
                 }
@@ -177,10 +184,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         runAllFunctions.checked = allChecked;
                     });
                 });
+                
+                // Make sure function list is visible
+                console.log("Function list should be displayed:", functionList.style.display);
             })
             .catch(error => {
                 console.error('Error fetching test functions:', error);
-                testFunctions.innerHTML = '<div class="text-center text-danger"><p>Error loading test functions</p></div>';
+                testFunctions.innerHTML = '<div class="text-center text-danger"><p>Error loading test functions: ' + error.message + '</p></div>';
             });
     }
     
@@ -189,11 +199,31 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} runId - ID of the test run
      */
     function pollResults(runId) {
+        if (!runId) {
+            console.error("Invalid runId:", runId);
+            testLogs.textContent += "Error: Invalid test run ID\n";
+            return;
+        }
+        
         const interval = setInterval(() => {
             fetch(`/api/results/${runId}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            console.warn(`Test run ${runId} not found yet, waiting...`);
+                            return { status: 'waiting' };
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    // Handle partial results while test is running
+                    if (data.status === 'waiting') {
+                        // Do nothing, just wait for the next poll
+                        return;
+                    }
+                    
+                    // Handle in-progress results
                     if (data.status === 'running' && data.results) {
                         // Update summary counters with current progress
                         const results = data.results;
@@ -223,12 +253,53 @@ document.addEventListener('DOMContentLoaded', function() {
                             updateFunctionStatus(rowId, test.status, test.error);
                         });
                     }
-                    // Handle completed test results
+                    // Handle completed results
                     else if (data.status === 'completed') {
-                        // Existing completed test handler code...
+                        clearInterval(interval);
+                        
+                        // Update logs
+                        testLogs.textContent += `Test run ${runId} completed\n`;
+                        
+                        // Update summary counters
+                        const results = data.results;
+                        totalTests.textContent = results.total;
+                        passedTests.textContent = results.passed;
+                        failedTests.textContent = results.failed;
+                        
+                        // Create/update test table
+                        const testName = selectedTestFile.split('/').pop().replace('.py', '');
+                        const tableId = createTestTable(testName, selectedTestFile);
+                        
+                        // Update test table status
+                        const status = results.failed > 0 ? 'failed' : 'passed';
+                        updateTestTableStatus(tableId, status, results.total, results.total);
+                        
+                        // Process each test result
+                        results.tests.forEach(test => {
+                            // Extract function name
+                            let funcName = test.name;
+                            if (funcName.startsWith('test_')) {
+                                funcName = funcName.substring(5);
+                            }
+                            
+                            // Add/update function row
+                            const rowId = addFunctionRow(tableId, funcName);
+                            updateFunctionStatus(rowId, test.status, test.error);
+                        });
+                        
+                        // Update status
+                        statusBadge.textContent = 'Completed';
+                        statusBadge.className = 'badge bg-success';
+                        
+                        // Auto-scroll logs to bottom
+                        testLogs.scrollTop = testLogs.scrollHeight;
                     }
                 })
-                // Rest of the function...
+                .catch(error => {
+                    console.error('Error polling results:', error);
+                    testLogs.textContent += `Error polling results for run ${runId}: ${error.message}\n`;
+                    clearInterval(interval);
+                });
         }, 500); // Poll every 500ms for more responsive updates
     }
     
@@ -459,6 +530,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function runParallelTests(testPaths) {
         const maxWorkersValue = Math.min(parseInt(maxWorkers.value, 10), testPaths.length);
         
+        // Create a dictionary of selected functions for each test path
+        const testFunctionsDict = {};
+        testPaths.forEach(testPath => {
+            if (selectedFunctionsByTest[testPath] && selectedFunctionsByTest[testPath].size > 0) {
+                testFunctionsDict[testPath] = Array.from(selectedFunctionsByTest[testPath]);
+            }
+        });
+        
         fetch('/api/run_parallel', {
             method: 'POST',
             headers: {
@@ -468,7 +547,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 paths: testPaths,
                 browser: document.getElementById('browser-select').value,
                 headless: document.getElementById('headless-mode').checked,
-                max_workers: maxWorkersValue
+                max_workers: maxWorkersValue,
+                test_functions: testFunctionsDict  // Send selected functions
             })
         })
         .then(response => response.json())
@@ -482,7 +562,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const testName = testPath.split('/').pop().replace('.py', '');
                 const tableId = createTestTable(testName, testPath);
                 updateTestTableStatus(tableId, 'pending');
+                
+                // If specific functions are selected for this test, show them
+                if (testFunctionsDict[testPath]) {
+                    testFunctionsDict[testPath].forEach(func => {
+                        const rowId = addFunctionRow(tableId, func);
+                        updateFunctionStatus(rowId, 'pending');
+                    });
+                }
             });
+            
+            // Auto-scroll logs to bottom
+            testLogs.scrollTop = testLogs.scrollHeight;
             
             // Poll for parallel results
             pollParallelResults(parallelRunId);
@@ -490,6 +581,20 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error starting parallel tests:', error);
             testLogs.textContent += `Error starting tests: ${error.message}\n`;
+            
+            // Show error in tables
+            testPaths.forEach(testPath => {
+                const testName = testPath.split('/').pop().replace('.py', '');
+                const tableId = createTestTable(testName, testPath);
+                updateTestTableStatus(tableId, 'failed', 0, 1);
+                
+                // Add error row
+                const rowId = addFunctionRow(tableId, "Error starting test");
+                updateFunctionStatus(rowId, 'failed', error.message);
+            });
+            
+            // Auto-scroll logs to bottom
+            testLogs.scrollTop = testLogs.scrollHeight;
         });
     }
     
@@ -497,8 +602,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Run All Functions checkbox handler
     runAllFunctions.addEventListener('change', function() {
-        const functionCheckboxes = document.querySelectorAll('.function-checkbox');
-        
         // Get the current test path
         if (!selectedTestFile) return;
         
@@ -507,6 +610,8 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedFunctionsByTest[selectedTestFile] = new Set();
         }
         selectedFunctions = selectedFunctionsByTest[selectedTestFile];
+        
+        const functionCheckboxes = document.querySelectorAll('.function-checkbox');
         
         functionCheckboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
@@ -551,12 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (testExecutionMode === 'single') {
             // Get the selected test path (first one in the set)
             const testPath = Array.from(selectedTests)[0];
-            
-            // Get the selected functions if viewing functions for this test
-            const functions = selectedTestFile === testPath && selectedFunctions.size > 0 ? 
-                Array.from(selectedFunctions) : [];
-            
-            runSingleTest(testPath, functions);
+            runSingleTest(testPath);
         }
         // Parallel test execution
         else {
