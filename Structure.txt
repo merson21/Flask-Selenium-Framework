@@ -1,0 +1,68 @@
+Smoke_Testing_Tool/
+├── app.py                      # Application factory
+├── wsgi.py                     # WSGI entry point
+├── routes.py                   # All route definitions
+├── config.py                   # Configuration settings
+├── test_runner.py              # Test execution engine
+│
+├── commands/                   # Selenium command modules
+│   ├── browser_commands.py     # Browser navigation commands
+│   ├── element_commands.py     # Element interaction commands
+│   ├── form_commands.py        # Form manipulation commands
+│   ├── validation_commands.py  # Test assertion commands
+│   └── wait_commands.py        # Synchronization commands
+│
+├── utils/                      # Utility functions
+│   ├── logger.py               # Logging utility
+│   └── helpers.py              # Helper functions
+│
+├── templates/                  # HTML templates
+│   └── index.html              # Main dashboard template
+│
+├── static/                     # Static assets
+│   ├── css/
+│   │   └── styles.css          # CSS styles
+│   └── js/
+│       ├── test-tables.js      # Test table functionality
+│       └── main.js             # Main application logic
+│
+├── tests/                      # Test file
+│   ├── config.py               # Test configuration
+│   ├── common_tests.py         # Reusable test functions
+│   ├── test_1.py               # Example test
+│   ├── test_2.py               # Example test
+│   └── test_3.py               # Example test
+│
+├── logs/                       # Log files directory
+└── screenshots/                # Test failure screenshots
+
+
+
+Backend Core
+
+app.py: Application factory that creates and configures the Flask app
+routes.py: Contains all API endpoints and view functions
+config.py: Application configuration settings
+test_runner.py: Core engine for executing tests
+
+Selenium Commands
+
+browser_commands.py: Navigation, screenshots, JavaScript execution
+element_commands.py: Finding elements, clicking, hovering
+form_commands.py: Input fields, dropdowns, checkboxes
+validation_commands.py: Assertions for testing
+wait_commands.py: Synchronization with page elements
+
+Frontend
+
+index.html: Main web interface
+styles.css: Visual styling
+test-tables.js: Real-time test table functionality
+main.js: Core UI logic and API interaction
+
+Test Organization
+
+common_tests.py: Reusable test functions
+config.py: Environment-specific test configurations
+test_*.py: Individual test files with test functions
+
