@@ -16,11 +16,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const executionMode = document.getElementById('execution-mode');
     const detailedResultsContainer = document.getElementById('detailed-results-container');
     
-    // Error modal elements
-    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-    const errorMessage = document.getElementById('error-message');
-    const errorScreenshot = document.getElementById('error-screenshot');
-    const screenshotContainer = document.getElementById('screenshot-container');
+    // Error modal elements references
+    const errorMessageElement = document.getElementById('error-message');
+    const errorScreenshotElement = document.getElementById('error-screenshot');
+    const screenshotContainerElement = document.getElementById('screenshot-container');
 
     // State variables
     const selectedTests = new Set();
@@ -296,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 // Add/update function row
                                 const rowId = addFunctionRow(tableId, funcName);
-                                updateFunctionStatus(rowId, test.status || 'running', test.error);
+                                updateFunctionStatus(rowId, test.status || 'running', test.error, test.screenshot);
                             });
                         }
                     }
@@ -338,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 // Add/update function row
                                 const rowId = addFunctionRow(tableId, funcName);
-                                updateFunctionStatus(rowId, test.status || 'failed', test.error);
+                                updateFunctionStatus(rowId, test.status || 'failed', test.error, test.screenshot);
                             });
                         } else if (results.error) {
                             // If we have an error but no tests, show it in the table
@@ -475,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     
                                     // Add/update function row
                                     const rowId = addFunctionRow(tableId, funcName);
-                                    updateFunctionStatus(rowId, test.status, test.error);
+                                    updateFunctionStatus(rowId, test.status, test.error, test.screenshot);
                                 }
                             });
                         }

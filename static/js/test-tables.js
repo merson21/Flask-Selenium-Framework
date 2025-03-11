@@ -95,8 +95,9 @@ function addFunctionRow(tableId, functionName) {
  * @param {string} rowId - ID of the row
  * @param {string} status - Status (passed, failed, running, pending)
  * @param {string} errorMessage - Error message if failed
+ * @param {string} screenshot - Path to screenshot if available
  */
-function updateFunctionStatus(rowId, status, errorMessage = null) {
+function updateFunctionStatus(rowId, status, errorMessage = null, screenshot = null) {
     const row = document.getElementById(rowId);
     if (!row) return;
     
@@ -128,8 +129,16 @@ function updateFunctionStatus(rowId, status, errorMessage = null) {
             row.style.cursor = 'pointer';
             row.setAttribute('data-error-message', errorMessage);
             
+            // Store screenshot path if available
+            if (screenshot) {
+                row.setAttribute('data-screenshot', screenshot);
+            }
+            
             row.addEventListener('click', function() {
-                showErrorModal(this.getAttribute('data-error-message'));
+                showErrorModal(
+                    this.getAttribute('data-error-message'),
+                    this.getAttribute('data-screenshot')
+                );
             });
         }
     } else if (status === 'running') {
@@ -179,6 +188,9 @@ function updateTestTableStatus(tableId, status, completed = 0, total = 0) {
     }
 }
 
+// Store a single instance of the error modal
+let errorModalInstance = null;
+
 /**
  * Shows the error modal with details
  * @param {string} errorMessage - Error message to display
@@ -190,12 +202,57 @@ function showErrorModal(errorMessage, screenshot = null) {
     
     const screenshotContainer = document.getElementById('screenshot-container');
     if (screenshot) {
-        document.getElementById('error-screenshot').src = `/screenshots/${screenshot}`;
+        // Log the screenshot path for debugging
+        console.log("Screenshot path:", screenshot);
+        
+        // Handle the screenshot path correctly
+        let screenshotSrc;
+        if (screenshot.startsWith('screenshots/')) {
+            // If the path already includes the screenshots/ prefix, use it directly
+            screenshotSrc = `/${screenshot}`;
+        } else if (screenshot.includes('/')) {
+            // If it's a full path but doesn't start with screenshots/
+            screenshotSrc = screenshot;
+        } else {
+            // If it's just a filename, prepend /screenshots/
+            screenshotSrc = `/screenshots/${screenshot}`;
+        }
+        
+        // Set the image source and show the container
+        document.getElementById('error-screenshot').src = screenshotSrc;
         screenshotContainer.style.display = 'block';
+        
+        // Log the final src for debugging
+        console.log("Screenshot src:", screenshotSrc);
     } else {
         screenshotContainer.style.display = 'none';
     }
     
-    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-    errorModal.show();
+    // Create the modal instance if it doesn't exist yet
+    if (!errorModalInstance) {
+        const modalElement = document.getElementById('errorModal');
+        
+        // Ensure proper cleanup when modal is hidden
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            // Clear the modal content to prevent issues
+            document.getElementById('error-message').textContent = '';
+            document.getElementById('error-screenshot').src = '';
+            
+            // Remove the modal backdrop if it exists
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+            
+            // Remove modal-open class from body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+        
+        errorModalInstance = new bootstrap.Modal(modalElement);
+    }
+    
+    // Show the modal
+    errorModalInstance.show();
 }
