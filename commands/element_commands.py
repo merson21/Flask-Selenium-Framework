@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from utils.logger import Logger
 from utils.helpers import wait_for_element
+from utils.exceptions import ElementTimeoutException
 
 logger = Logger(__name__)
 
@@ -70,7 +71,7 @@ class ElementCommands:
             # Default to CSS selector
             return By.CSS_SELECTOR, selector
     
-    def find(self, selector, selector_type=None, timeout=None):
+    def find(self, selector, selector_type=None, timeout=None, raise_exception=False):
         """
         Find an element using the specified selector
         
@@ -78,24 +79,53 @@ class ElementCommands:
             selector: The selector string (can include prefix for auto-detection)
             selector_type: Optional explicit selector type. If provided, overrides auto-detection.
             timeout: Optional timeout in seconds
+            raise_exception: Whether to raise an exception if element not found
         
         Returns:
-            The found element or None if not found
+            The found element or None if not found and raise_exception is False
+            
+        Raises:
+            ElementTimeoutException: If raise_exception is True and element not found
         """
         by_method, selector_value = self._parse_selector(selector, selector_type)
         wait_time = timeout if timeout is not None else self.config.IMPLICIT_WAIT
         
         logger.info(f"Finding element with {By.__name__}.{by_method}: {selector_value}")
         try:
-            element = wait_for_element(self.driver, (by_method, selector_value), wait_time)
+            element = wait_for_element(self.driver, (by_method, selector_value), wait_time, raise_exception, self.config)
             if element:
                 return element
+            elif raise_exception:
+                # This should not happen as wait_for_element should raise an exception
+                raise ElementTimeoutException(selector_value, by_method, wait_time)
             else:
                 logger.error(f"Element not found with {By.__name__}.{by_method}: {selector_value}")
                 return None
+        except ElementTimeoutException:
+            # Re-raise ElementTimeoutException
+            raise
         except Exception as e:
             logger.error(f"Error finding element with {By.__name__}.{by_method}: {selector_value} - {str(e)}")
+            if raise_exception:
+                raise
             return None
+    
+    def find_or_fail(self, selector, selector_type=None, timeout=None):
+        """
+        Find an element using the specified selector or raise an exception if not found
+        
+        Args:
+            selector: The selector string (can include prefix for auto-detection)
+            selector_type: Optional explicit selector type. If provided, overrides auto-detection.
+            timeout: Optional timeout in seconds
+        
+        Returns:
+            The found element
+            
+        Raises:
+            ElementTimeoutException: If element not found after timeout
+        """
+        return self.find(selector, selector_type, timeout, raise_exception=True)
     
     def find_all(self, selector, selector_type=None):
         """

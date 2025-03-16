@@ -1,0 +1,42 @@
+/* Element timeout error styling */
+.element-timeout-error {
+    background-color: #fff8f8;
+    border-left: 4px solid #dc3545;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.element-timeout-error strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #dc3545;
+}
+
+.timeout-details {
+    margin-bottom: 8px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.timeout-details div {
+    margin-bottom: 4px;
+}
+
+.timeout-details span {
+    font-weight: bold;
+    display: inline-block;
+    width: 120px;
+}
+
+.error-container {
+    margin-bottom: 10px;
+}
+
+.error-message {
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9em;
+    color: #721c24;
+} 

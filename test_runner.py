@@ -14,6 +14,7 @@ from commands.form_commands import FormCommands
 from commands.validation_commands import ValidationCommands
 from commands.wait_commands import WaitCommands
 from config import Config
+from utils.exceptions import ElementTimeoutException
 
 logger = Logger(__name__)
 
@@ -56,32 +57,57 @@ class TestRunner:
     
     def run_test(self, test_function):
         """
-        Run a single test function with real-time updates
+        Run a single test function
+        
+        Args:
+            test_function: The test function to run
+            
+        Returns:
+            Dictionary with test results
         """
         test_name = test_function.__name__
         logger.info(f"Running test: {test_name}")
         
-        self.results['total'] += 1
         result = {
             'name': test_name,
-            'status': 'running',  # Set initial status to running
-            'error': None
+            'status': 'passed',
+            'error': None,
+            'screenshot': None
         }
         
-        # Add the test to results immediately with running status
-        self.results['tests'].append(result)
-        
         try:
+            # Call the test function with self as argument
             test_function(self)
+            
             self.results['passed'] += 1
-            result['status'] = 'passed'
             logger.info(f"Test passed: {test_name}")
             
-            # Take screenshot on passed test
             if self.config.TAKE_SCREENSHOT_ON_SUCCESS and hasattr(self, 'browser'):
                 from utils.helpers import take_screenshot
-                screenshot_path = take_screenshot(self.browser, f"passed_{test_name}")
+                screenshot_path = take_screenshot(self.browser, f"success_{test_name}")
                 logger.info(f"Success screenshot saved: {screenshot_path}")
+                # Store just the filename without the 'screenshots/' prefix
+                if screenshot_path.startswith('screenshots/'):
+                    result['screenshot'] = screenshot_path.replace('screenshots/', '')
+                else:
+                    result['screenshot'] = screenshot_path
+        except ElementTimeoutException as e:
+            self.results['failed'] += 1
+            error_message = str(e)
+            error_traceback = traceback.format_exc()
+            logger.error(f"Test failed due to element timeout: {test_name} - {error_message}\n{error_traceback}")
+            
+            result['status'] = 'failed'
+            result['error'] = error_message
+            result['error_type'] = 'element_timeout'
+            result['selector'] = e.selector
+            result['selector_type'] = e.selector_type
+            result['timeout'] = e.timeout
+            
+            if self.config.TAKE_SCREENSHOT_ON_FAILURE and hasattr(self, 'browser'):
+                from utils.helpers import take_screenshot
+                screenshot_path = take_screenshot(self.browser, f"failure_{test_name}")
+                logger.error(f"Failure screenshot saved: {screenshot_path}")
                 # Store just the filename without the 'screenshots/' prefix
                 if screenshot_path.startswith('screenshots/'):
                     result['screenshot'] = screenshot_path.replace('screenshots/', '')
@@ -105,6 +131,7 @@ class TestRunner:
                     result['screenshot'] = screenshot_path.replace('screenshots/', '')
                 else:
                     result['screenshot'] = screenshot_path
+        
         return result
 
 

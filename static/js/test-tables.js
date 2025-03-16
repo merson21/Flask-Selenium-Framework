@@ -92,12 +92,13 @@ function addFunctionRow(tableId, functionName) {
 
 /**
  * Updates the status of a function row
- * @param {string} rowId - ID of the row
+ * @param {string} rowId - ID of the row to update
  * @param {string} status - Status (passed, failed, running, pending)
  * @param {string} errorMessage - Error message if failed
  * @param {string} screenshot - Path to screenshot if available
+ * @param {object} errorDetails - Additional error details
  */
-function updateFunctionStatus(rowId, status, errorMessage = null, screenshot = null) {
+function updateFunctionStatus(rowId, status, errorMessage = null, screenshot = null, errorDetails = null) {
     const row = document.getElementById(rowId);
     if (!row) return;
     
@@ -146,7 +147,20 @@ function updateFunctionStatus(rowId, status, errorMessage = null, screenshot = n
         // Make row clickable if there's an error message
         if (errorMessage) {
             row.style.cursor = 'pointer';
-            row.setAttribute('data-error-message', errorMessage);
+            
+            // Check if this is an element timeout error
+            if (errorDetails && errorDetails.error_type === 'element_timeout') {
+                // Create a more detailed error message for element timeout
+                const detailedMessage = `Element Timeout Error
+Selector: ${errorDetails.selector}
+Selector Type: ${errorDetails.selector_type}
+Timeout: ${errorDetails.timeout} seconds
+
+${errorMessage}`;
+                row.setAttribute('data-error-message', detailedMessage);
+            } else {
+                row.setAttribute('data-error-message', errorMessage);
+            }
             
             // Store screenshot path if available
             if (screenshot) {

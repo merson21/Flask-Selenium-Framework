@@ -14,11 +14,12 @@ class Config:
     # Screenshot settings
     SCREENSHOT_DIR = os.environ.get("SCREENSHOT_DIR", "screenshots")
     TAKE_SCREENSHOT_ON_FAILURE = os.environ.get("SCREENSHOT_ON_FAILURE", "True").lower() == "true"
+    TAKE_SCREENSHOT_ON_SUCCESS = os.environ.get("SCREENSHOT_ON_SUCCESS", "True").lower() == "true"
     
     # Retry settings
-    MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "3"))
+    MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "1"))
     RETRY_DELAY = int(os.environ.get("RETRY_DELAY", "1"))
 
     # Login Credentials
     LOGIN_USERNAME = "tomsmith"
-    LOGIN_PASSWORD = "SuperSecretPassword!"
+    LOGIN_PASSWORD = "SuperSecretPassword"

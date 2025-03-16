@@ -98,7 +98,7 @@ def _dynamic_waits(runner, loadingPage):
     runner.elements.click("div#start button")
     
     # Wait for loading indicator to disappear using XPath
-    runner.wait.wait_for_element_invisible("//div[@id='loading']")
+    runner.wait.wait_for_element_invisible("//div[@id='loading']", timeout=1)
     
     # # Wait for text to appear using ID selector
     # runner.wait.wait_for_element_visible("#finish")

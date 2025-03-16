@@ -15,7 +15,7 @@ class FormCommands:
         self.config = config
         self.element_commands = ElementCommands(driver, config)
     
-    def type(self, selector, text, selector_type=None, clear_first=True, timeout=None):
+    def type(self, selector, text, selector_type=None, clear_first=True, timeout=None, raise_exception=False):
         """
         Type text into an input field
         
@@ -25,20 +25,34 @@ class FormCommands:
             selector_type: Optional explicit selector type. If provided, overrides auto-detection.
             clear_first: Whether to clear the field before typing
             timeout: Optional timeout in seconds
+            raise_exception: Whether to raise an exception if element not found
         
         Returns:
             True if typing successful, False otherwise
+        
+        Raises:
+            ElementTimeoutException: If raise_exception is True and element not found
         """
-        element = self.element_commands.find(selector, selector_type, timeout)
-        if element:
-            if clear_first:
-                element.clear()
+        try:
+            if raise_exception:
+                element = self.element_commands.find_or_fail(selector, selector_type, timeout)
+            else:
+                element = self.element_commands.find(selector, selector_type, timeout)
             
-            by_method, selector_value = self.element_commands._parse_selector(selector, selector_type)
-            logger.info(f"Typing '{text}' into element with {by_method}: {selector_value}")
-            element.send_keys(text)
-            return True
-        return False
+            if element:
+                if clear_first:
+                    element.clear()
+                
+                by_method, selector_value = self.element_commands._parse_selector(selector, selector_type)
+                logger.info(f"Typing '{text}' into element with {by_method}: {selector_value}")
+                element.send_keys(text)
+                return True
+            return False
+        except Exception as e:
+            if raise_exception:
+                raise
+            logger.error(f"Error typing into element: {str(e)}")
+            return False
     
     def clear(self, selector, selector_type=None, timeout=None):
         """

@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 // Add/update function row
                                 const rowId = addFunctionRow(tableId, funcName);
-                                updateFunctionStatus(rowId, test.status || 'running', test.error, test.screenshot);
+                                updateFunctionStatus(rowId, test.status || 'running', test.error, test.screenshot, test);
                             });
                         }
                     }
@@ -338,16 +338,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 // Add/update function row
                                 const rowId = addFunctionRow(tableId, funcName);
-                                updateFunctionStatus(rowId, test.status || 'failed', test.error, test.screenshot);
+                                updateFunctionStatus(rowId, test.status || 'failed', test.error, test.screenshot, test);
                             });
                         } else if (results.error) {
                             // If we have an error but no tests, show it in the table
                             const rowId = addFunctionRow(tableId, "Test execution error");
-                            updateFunctionStatus(rowId, 'failed', results.error, null);
+                            updateFunctionStatus(rowId, 'failed', results.error, null, null);
                         } else {
                             // If we have neither tests nor errors, show a generic message
                             const rowId = addFunctionRow(tableId, "No test results available");
-                            updateFunctionStatus(rowId, 'failed', "No test results were returned from the server", null);
+                            updateFunctionStatus(rowId, 'failed', "No test results were returned from the server", null, null);
                         }
                         
                         // Update status
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Add error row
                         const errorMessage = data.error || "Unknown error occurred";
                         const rowId = addFunctionRow(tableId, "Error");
-                        updateFunctionStatus(rowId, 'failed', errorMessage, null);
+                        updateFunctionStatus(rowId, 'failed', errorMessage, null, null);
                         
                         // Update status
                         statusBadge.textContent = 'Error';
@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     updateTestTableStatus(tableId, 'failed', 0, 0);
                                     // Add error message to table
                                     const errorRow = addFunctionRow(tableId, "Error running test");
-                                    updateFunctionStatus(errorRow, 'failed', testResult.error || 'Unknown error', null);
+                                    updateFunctionStatus(errorRow, 'failed', testResult.error || 'Unknown error', null, null);
                                 }
                             }
                         }
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     
                                     // Add/update function row
                                     const rowId = addFunctionRow(tableId, funcName);
-                                    updateFunctionStatus(rowId, test.status, test.error, test.screenshot);
+                                    updateFunctionStatus(rowId, test.status, test.error, test.screenshot, test);
                                 }
                             });
                         }
@@ -580,12 +580,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (functions.length > 0) {
                 functions.forEach(func => {
                     const rowId = addFunctionRow(tableId, func);
-                    updateFunctionStatus(rowId, 'running', null, null);
+                    updateFunctionStatus(rowId, 'running', null, null, null);
                 });
             } else {
                 // Otherwise, create a generic row to show something is happening
                 const rowId = addFunctionRow(tableId, "Running all tests...");
-                updateFunctionStatus(rowId, 'running', null, null);
+                updateFunctionStatus(rowId, 'running', null, null, null);
             }
             
             // Auto-scroll logs to bottom
@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add error row
             const rowId = addFunctionRow(tableId, "Error starting test");
-            updateFunctionStatus(rowId, 'failed', error.message, null);
+            updateFunctionStatus(rowId, 'failed', error.message, null, null);
             
             // Auto-scroll logs to bottom
             testLogs.scrollTop = testLogs.scrollHeight;
@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         const rowId = addFunctionRow(tableId, normalizedFunc);
-                        updateFunctionStatus(rowId, 'pending');
+                        updateFunctionStatus(rowId, 'pending', null, null, null);
                     });
                 }
             });
@@ -686,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Add error row
                 const rowId = addFunctionRow(tableId, "Error starting test");
-                updateFunctionStatus(rowId, 'failed', error.message, null);
+                updateFunctionStatus(rowId, 'failed', error.message, null, null);
             });
             
             // Auto-scroll logs to bottom
