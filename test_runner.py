@@ -76,6 +76,17 @@ class TestRunner:
             self.results['passed'] += 1
             result['status'] = 'passed'
             logger.info(f"Test passed: {test_name}")
+            
+            # Take screenshot on passed test
+            if self.config.TAKE_SCREENSHOT_ON_SUCCESS and hasattr(self, 'browser'):
+                from utils.helpers import take_screenshot
+                screenshot_path = take_screenshot(self.browser, f"passed_{test_name}")
+                logger.info(f"Success screenshot saved: {screenshot_path}")
+                # Store just the filename without the 'screenshots/' prefix
+                if screenshot_path.startswith('screenshots/'):
+                    result['screenshot'] = screenshot_path.replace('screenshots/', '')
+                else:
+                    result['screenshot'] = screenshot_path
         except Exception as e:
             self.results['failed'] += 1
             error_message = str(e)
@@ -88,7 +99,7 @@ class TestRunner:
             if self.config.TAKE_SCREENSHOT_ON_FAILURE and hasattr(self, 'browser'):
                 from utils.helpers import take_screenshot
                 screenshot_path = take_screenshot(self.browser, f"failure_{test_name}")
-                logger.info(f"Failure screenshot saved: {screenshot_path}")
+                logger.error(f"Failure screenshot saved: {screenshot_path}")
                 # Store just the filename without the 'screenshots/' prefix
                 if screenshot_path.startswith('screenshots/'):
                     result['screenshot'] = screenshot_path.replace('screenshots/', '')

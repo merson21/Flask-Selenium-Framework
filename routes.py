@@ -111,6 +111,7 @@ def register_test_api_routes(app):
         test_path = data.get('path')
         browser_type = data.get('browser', 'chrome')
         headless_mode = data.get('headless', False)
+        screenshot_success = data.get('screenshot_success', True)
         functions = data.get('functions', [])  # List of function names to run
         
         if not test_path:
@@ -124,6 +125,8 @@ def register_test_api_routes(app):
             config = Config()
             # Override headless mode from request
             config.HEADLESS = headless_mode
+            # Override screenshot on success from request
+            config.TAKE_SCREENSHOT_ON_SUCCESS = screenshot_success
             runner = TestRunner(config)
             active_tests[run_id] = runner
             
@@ -255,6 +258,7 @@ def register_test_api_routes(app):
         test_paths = data.get('paths', [])
         browser_type = data.get('browser', 'chrome')
         headless_mode = data.get('headless', False)
+        screenshot_success = data.get('screenshot_success', True)
         max_workers = data.get('max_workers', 3)  # Default to 3 parallel workers
         test_functions = data.get('test_functions', {})  # Dictionary of selected functions per test
         
@@ -291,6 +295,7 @@ def register_test_api_routes(app):
                     try:
                         config = Config()
                         config.HEADLESS = headless_mode
+                        config.TAKE_SCREENSHOT_ON_SUCCESS = screenshot_success
                         runner = TestRunner(config)
                         active_tests[run_id] = runner
                         

@@ -75,6 +75,10 @@
                                 <input type="checkbox" class="form-check-input" id="headless-mode">
                                 <label class="form-check-label" for="headless-mode">Run in Headless Mode</label>
                             </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="screenshot-success" checked>
+                                <label class="form-check-label" for="screenshot-success">Take Screenshots on Success</label>
+                            </div>
                             <div class="mb-3">
                                 <label for="max-workers" class="form-label">Max Parallel Workers</label>
                                 <input type="number" class="form-control" id="max-workers" min="1" max="10" value="3">
@@ -163,7 +167,7 @@ Waiting for test execution...
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Test Failure Details</h5>
+                    <h5 class="modal-title text-danger">Test Failure Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

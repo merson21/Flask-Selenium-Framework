@@ -558,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 path: testPath,
                 browser: document.getElementById('browser-select').value,
                 headless: document.getElementById('headless-mode').checked,
+                screenshot_success: document.getElementById('screenshot-success').checked,
                 functions: functions
             })
         })
@@ -635,6 +636,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 paths: testPaths,
                 browser: document.getElementById('browser-select').value,
                 headless: document.getElementById('headless-mode').checked,
+                screenshot_success: document.getElementById('screenshot-success').checked,
                 max_workers: maxWorkersValue,
                 test_functions: testFunctionsDict  // Send selected functions
             })

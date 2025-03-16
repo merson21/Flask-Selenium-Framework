@@ -120,6 +120,25 @@ function updateFunctionStatus(rowId, status, errorMessage = null, screenshot = n
     if (status === 'passed') {
         statusBadge.classList.add('status-passed');
         statusBadge.textContent = 'PASSED';
+        
+        // Make row clickable if there's a screenshot
+        if (screenshot) {
+            row.style.cursor = 'pointer';
+            row.setAttribute('data-error-message', 'Test passed successfully!');
+            row.setAttribute('data-screenshot', screenshot);
+            
+            // Remove any existing click event listeners
+            const newRow = row.cloneNode(true);
+            row.parentNode.replaceChild(newRow, row);
+            
+            // Add click event listener to the new row
+            newRow.addEventListener('click', function() {
+                showSuccessModal(
+                    this.getAttribute('data-error-message'),
+                    this.getAttribute('data-screenshot')
+                );
+            });
+        }
     } else if (status === 'failed') {
         statusBadge.classList.add('status-failed');
         statusBadge.textContent = 'FAILED';
@@ -199,6 +218,13 @@ function updateTestTableStatus(tableId, status, completed = 0, total = 0) {
  * @param {string} screenshot - Path to the screenshot
  */
 function showErrorModal(errorMessage, screenshot = null) {
+    // Reset modal styling
+    const modalElement = document.getElementById('errorModal');
+    const modalTitle = modalElement.querySelector('.modal-title');
+    modalTitle.textContent = 'Test Failure Details';
+    modalTitle.classList.remove('text-success');
+    modalTitle.classList.add('text-danger');
+    
     errorMessage = errorMessage || 'No error details available';
     document.getElementById('error-message').textContent = errorMessage;
     
@@ -206,12 +232,15 @@ function showErrorModal(errorMessage, screenshot = null) {
     if (screenshot) {
         document.getElementById('error-screenshot').src = `/screenshots/${screenshot}`;
         screenshotContainer.style.display = 'block';
+        
+        // Update screenshot heading
+        const screenshotHeading = screenshotContainer.querySelector('h6');
+        screenshotHeading.textContent = 'Failure Screenshot';
     } else {
         screenshotContainer.style.display = 'none';
     }
     
     // Dispose any existing modal instance
-    const modalElement = document.getElementById('errorModal');
     const existingModal = bootstrap.Modal.getInstance(modalElement);
     if (existingModal) {
         existingModal.dispose();
@@ -220,4 +249,42 @@ function showErrorModal(errorMessage, screenshot = null) {
     // Create and show a new modal instance
     const errorModal = new bootstrap.Modal(modalElement);
     errorModal.show();
+}
+
+/**
+ * Shows the success modal with details
+ * @param {string} message - Success message to display
+ * @param {string} screenshot - Path to the screenshot
+ */
+function showSuccessModal(message, screenshot = null) {
+    // Reuse the error modal but change the title and styling
+    const modalElement = document.getElementById('errorModal');
+    const modalTitle = modalElement.querySelector('.modal-title');
+    modalTitle.textContent = 'Test Success Details';
+    modalTitle.className = 'modal-title text-success';
+    
+    const messageElement = document.getElementById('error-message');
+    messageElement.textContent = message || 'Test passed successfully!';
+    
+    const screenshotContainer = document.getElementById('screenshot-container');
+    if (screenshot) {
+        document.getElementById('error-screenshot').src = `/screenshots/${screenshot}`;
+        screenshotContainer.style.display = 'block';
+        
+        // Update screenshot heading
+        const screenshotHeading = screenshotContainer.querySelector('h6');
+        screenshotHeading.textContent = 'Success Screenshot';
+    } else {
+        screenshotContainer.style.display = 'none';
+    }
+    
+    // Dispose any existing modal instance
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    // Create and show a new modal instance
+    const successModal = new bootstrap.Modal(modalElement);
+    successModal.show();
 }
