@@ -89,7 +89,11 @@ class TestRunner:
                 from utils.helpers import take_screenshot
                 screenshot_path = take_screenshot(self.browser, f"failure_{test_name}")
                 logger.info(f"Failure screenshot saved: {screenshot_path}")
-                result['screenshot'] = screenshot_path   
+                # Store just the filename without the 'screenshots/' prefix
+                if screenshot_path.startswith('screenshots/'):
+                    result['screenshot'] = screenshot_path.replace('screenshots/', '')
+                else:
+                    result['screenshot'] = screenshot_path
         return result
 
 

@@ -95,8 +95,9 @@ function addFunctionRow(tableId, functionName) {
  * @param {string} rowId - ID of the row
  * @param {string} status - Status (passed, failed, running, pending)
  * @param {string} errorMessage - Error message if failed
+ * @param {string} screenshot - Path to screenshot if available
  */
-function updateFunctionStatus(rowId, status, errorMessage = null) {
+function updateFunctionStatus(rowId, status, errorMessage = null, screenshot = null) {
     const row = document.getElementById(rowId);
     if (!row) return;
     
@@ -128,8 +129,21 @@ function updateFunctionStatus(rowId, status, errorMessage = null) {
             row.style.cursor = 'pointer';
             row.setAttribute('data-error-message', errorMessage);
             
-            row.addEventListener('click', function() {
-                showErrorModal(this.getAttribute('data-error-message'));
+            // Store screenshot path if available
+            if (screenshot) {
+                row.setAttribute('data-screenshot', screenshot);
+            }
+            
+            // Remove any existing click event listeners
+            const newRow = row.cloneNode(true);
+            row.parentNode.replaceChild(newRow, row);
+            
+            // Add click event listener to the new row
+            newRow.addEventListener('click', function() {
+                showErrorModal(
+                    this.getAttribute('data-error-message'),
+                    this.getAttribute('data-screenshot')
+                );
             });
         }
     } else if (status === 'running') {
@@ -196,6 +210,14 @@ function showErrorModal(errorMessage, screenshot = null) {
         screenshotContainer.style.display = 'none';
     }
     
-    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    // Dispose any existing modal instance
+    const modalElement = document.getElementById('errorModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    // Create and show a new modal instance
+    const errorModal = new bootstrap.Modal(modalElement);
     errorModal.show();
 }
