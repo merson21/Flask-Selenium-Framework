@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from utils.logger import Logger
 from commands.element_commands import ElementCommands
+from utils.helpers import retry
 
 logger = Logger(__name__)
 
@@ -17,6 +18,7 @@ class WaitCommands:
         self.config = config
         self.element_commands = ElementCommands(driver, config)
     
+    @retry
     def wait_for_element_visible(self, selector, selector_type=None, timeout=None):
         """
         Wait for an element to be visible
@@ -42,6 +44,7 @@ class WaitCommands:
             logger.warning(f"Timeout waiting for element to be visible with {by_method}: {selector_value}")
             return None
     
+    @retry
     def wait_for_element_invisible(self, selector, selector_type=None, timeout=None):
         """
         Wait for an element to be invisible
@@ -66,6 +69,7 @@ class WaitCommands:
             logger.warning(f"Timeout waiting for element to be invisible with {by_method}: {selector_value}")
             return False
     
+    @retry
     def wait_for_element_present(self, selector, selector_type=None, timeout=None):
         """
         Wait for an element to be present in the DOM
@@ -91,6 +95,7 @@ class WaitCommands:
             logger.warning(f"Timeout waiting for element to be present with {by_method}: {selector_value}")
             return None
     
+    @retry
     def wait_for_element_clickable(self, selector, selector_type=None, timeout=None):
         """
         Wait for an element to be clickable
@@ -116,18 +121,19 @@ class WaitCommands:
             logger.warning(f"Timeout waiting for element to be clickable with {by_method}: {selector_value}")
             return None
     
+    @retry
     def wait_for_text(self, selector, text, selector_type=None, timeout=None):
         """
-        Wait for an element to contain specific text
+        Wait for an element to contain the specified text
         
         Args:
             selector: The selector string (can include prefix for auto-detection)
             text: The text to wait for
             selector_type: Optional explicit selector type. If provided, overrides auto-detection.
             timeout: Optional timeout in seconds
-        
+            
         Returns:
-            True if text is present, False otherwise
+            True if text found, False otherwise
         """
         by_method, selector_value = self.element_commands._parse_selector(selector, selector_type)
         wait_time = timeout if timeout is not None else self.config.IMPLICIT_WAIT

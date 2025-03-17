@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from utils.logger import Logger
-from utils.helpers import wait_for_element
+from utils.helpers import wait_for_element, retry
 from utils.exceptions import ElementTimeoutException
 
 logger = Logger(__name__)
@@ -149,6 +149,7 @@ class ElementCommands:
             logger.error(f"Error finding elements with {By.__name__}.{by_method}: {selector_value} - {str(e)}")
             return []
     
+    @retry
     def click(self, selector, selector_type=None, timeout=None):
         """
         Click on an element
@@ -159,7 +160,10 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            True if click successful, False otherwise
+            True if click successful
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         element = self.find(selector, selector_type, timeout)
         if element:
@@ -167,8 +171,13 @@ class ElementCommands:
             logger.info(f"Clicking on element with {By.__name__}.{by_method}: {selector_value}")
             element.click()
             return True
-        return False
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for click: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
+    @retry
     def double_click(self, selector, selector_type=None, timeout=None):
         """
         Double-click on an element
@@ -191,6 +200,7 @@ class ElementCommands:
             return True
         return False
     
+    @retry
     def right_click(self, selector, selector_type=None, timeout=None):
         """
         Right-click on an element
@@ -213,6 +223,7 @@ class ElementCommands:
             return True
         return False
     
+    @retry
     def hover(self, selector, selector_type=None, timeout=None):
         """
         Hover over an element
@@ -235,6 +246,7 @@ class ElementCommands:
             return True
         return False
     
+    @retry
     def drag_and_drop(self, source_selector, target_selector, source_type=None, target_type=None):
         """
         Drag an element and drop it onto another element
@@ -262,6 +274,7 @@ class ElementCommands:
             return True
         return False
     
+    @retry
     def get_text(self, selector, selector_type=None, timeout=None):
         """
         Get the text content of an element
@@ -272,15 +285,23 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            Text content or None if element not found
+            Text content or None if element not found after all retries
+        
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         element = self.find(selector, selector_type, timeout)
         if element:
             text = element.text
             logger.info(f"Got text from element: {text}")
             return text
-        return None
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for get_text: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
+    @retry
     def get_attribute(self, selector, attribute, selector_type=None, timeout=None):
         """
         Get an attribute value from an element
@@ -292,15 +313,23 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            Attribute value or None if element not found
+            Attribute value or None if element not found after all retries
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         element = self.find(selector, selector_type, timeout)
         if element:
             value = element.get_attribute(attribute)
             logger.info(f"Got attribute '{attribute}' from element: {value}")
             return value
-        return None
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for get_attribute: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
+    @retry
     def is_displayed(self, selector, selector_type=None, timeout=None):
         """
         Check if an element is displayed
@@ -320,6 +349,7 @@ class ElementCommands:
             return result
         return False
     
+    @retry
     def is_enabled(self, selector, selector_type=None, timeout=None):
         """
         Check if an element is enabled
