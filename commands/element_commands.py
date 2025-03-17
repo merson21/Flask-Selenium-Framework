@@ -188,7 +188,10 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            True if double-click successful, False otherwise
+            True if double-click successful
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         from selenium.webdriver.common.action_chains import ActionChains
         
@@ -198,7 +201,11 @@ class ElementCommands:
             logger.info(f"Double-clicking on element with {By.__name__}.{by_method}: {selector_value}")
             ActionChains(self.driver).double_click(element).perform()
             return True
-        return False
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for double_click: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
     @retry
     def right_click(self, selector, selector_type=None, timeout=None):
@@ -211,7 +218,10 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            True if right-click successful, False otherwise
+            True if right-click successful
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         from selenium.webdriver.common.action_chains import ActionChains
         
@@ -221,7 +231,11 @@ class ElementCommands:
             logger.info(f"Right-clicking on element with {By.__name__}.{by_method}: {selector_value}")
             ActionChains(self.driver).context_click(element).perform()
             return True
-        return False
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for right_click: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
     @retry
     def hover(self, selector, selector_type=None, timeout=None):
@@ -234,7 +248,10 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            True if hover successful, False otherwise
+            True if hover successful
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         from selenium.webdriver.common.action_chains import ActionChains
         
@@ -244,7 +261,11 @@ class ElementCommands:
             logger.info(f"Hovering over element with {By.__name__}.{by_method}: {selector_value}")
             ActionChains(self.driver).move_to_element(element).perform()
             return True
-        return False
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for hover: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
     @retry
     def drag_and_drop(self, source_selector, target_selector, source_type=None, target_type=None):
@@ -258,7 +279,10 @@ class ElementCommands:
             target_type: Optional explicit selector type for target
         
         Returns:
-            True if drag and drop successful, False otherwise
+            True if drag and drop successful
+            
+        Raises:
+            NoSuchElementException: If source or target element not found (will be caught by retry decorator)
         """
         from selenium.webdriver.common.action_chains import ActionChains
         
@@ -272,7 +296,16 @@ class ElementCommands:
             logger.info(f"Dragging element from {source_by}:{source_value} to {target_by}:{target_value}")
             ActionChains(self.driver).drag_and_drop(source, target).perform()
             return True
-        return False
+        else:
+            # Determine which element is missing and raise an appropriate exception
+            if not source:
+                source_by, source_value = self._parse_selector(source_selector, source_type)
+                logger.warning(f"Source element not found for drag_and_drop: {source_by}:{source_value}")
+                raise NoSuchElementException(f"Source element not found: {source_by}:{source_value}")
+            else:
+                target_by, target_value = self._parse_selector(target_selector, target_type)
+                logger.warning(f"Target element not found for drag_and_drop: {target_by}:{target_value}")
+                raise NoSuchElementException(f"Target element not found: {target_by}:{target_value}")
     
     @retry
     def get_text(self, selector, selector_type=None, timeout=None):
@@ -340,14 +373,21 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            True if element is displayed, False otherwise
+            True if element is displayed, False if element exists but is not displayed
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         element = self.find(selector, selector_type, timeout)
         if element:
             result = element.is_displayed()
             logger.info(f"Element is displayed: {result}")
             return result
-        return False
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for is_displayed: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
     @retry
     def is_enabled(self, selector, selector_type=None, timeout=None):
@@ -360,14 +400,21 @@ class ElementCommands:
             timeout: Optional timeout in seconds
         
         Returns:
-            True if element is enabled, False otherwise
+            True if element is enabled, False if element exists but is disabled
+            
+        Raises:
+            NoSuchElementException: If element not found (will be caught by retry decorator)
         """
         element = self.find(selector, selector_type, timeout)
         if element:
             result = element.is_enabled()
             logger.info(f"Element is enabled: {result}")
             return result
-        return False
+        else:
+            # Raise an exception that the retry decorator will catch
+            by_method, selector_value = self._parse_selector(selector, selector_type)
+            logger.warning(f"Element not found for is_enabled: {by_method}:{selector_value}")
+            raise NoSuchElementException(f"Element not found: {by_method}:{selector_value}")
     
     def exists(self, selector, selector_type=None, timeout=0):
         """

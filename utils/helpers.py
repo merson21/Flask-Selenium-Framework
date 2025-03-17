@@ -58,19 +58,22 @@ def retry(func=None, max_retries=None, delay=None):
             last_exception = None
             logger = Logger(__name__)
             
-            # Log the function call for debugging
-            arg_str = ', '.join([str(a) for a in args] + [f"{k}={v}" for k, v in kwargs.items()])
-            logger.info(f"RETRY-PROTECTED: Calling {func.__name__}({arg_str})")
+            # Create a simplified argument string for logging
+            arg_str = ', '.join([str(a) for a in args[:1]] + 
+                               [f"{k}={v}" for k, v in list(kwargs.items())[:2]])
+            if len(args) > 1 or len(kwargs) > 2:
+                arg_str += ", ..."
+                
+            # Only log at debug level to reduce verbosity
+            logger.debug(f"RETRY-PROTECTED: {func.__name__}({arg_str})")
             
             for attempt in range(retries):
                 try:
-                    if attempt > 0:
-                        logger.warning(f"RETRY ATTEMPT {attempt}/{retries-1} for {func.__name__}")
-                    
                     result = func(self, *args, **kwargs)
                     
+                    # Only log retries that actually happened
                     if attempt > 0:
-                        logger.warning(f"RETRY SUCCEEDED on attempt {attempt+1}/{retries} for {func.__name__}")
+                        logger.info(f"RETRY SUCCEEDED on attempt {attempt+1}/{retries} for {func.__name__}")
                     
                     return result
                     
@@ -79,18 +82,32 @@ def retry(func=None, max_retries=None, delay=None):
                         TimeoutException) as e:
                     last_exception = e
                     if attempt < retries - 1:
-                        logger.warning(f"RETRY TRIGGERED: Attempt {attempt+1}/{retries} failed for {func.__name__}: {str(e)}")
-                        logger.warning(f"Waiting {retry_delay}s before retry {attempt+2}/{retries}")
+                        # Simplify the error message
+                        error_msg = str(e)
+                        if len(error_msg) > 100:
+                            error_msg = error_msg[:97] + "..."
+                            
+                        logger.warning(f"RETRY {attempt+1}/{retries-1}: {func.__name__} - {error_msg}")
+                        
+                        # Store the error message for potential use in assertion errors
+                        Logger.last_error = f"Element interaction failed: {str(e)}"
+                        
+                        # Log the wait at debug level to reduce verbosity
+                        logger.debug(f"Waiting {retry_delay}s before retry {attempt+2}/{retries}")
                         time.sleep(retry_delay)
                     else:
                         logger.error(f"RETRY EXHAUSTED: All {retries} attempts failed for {func.__name__}")
+                        # Store the final error message
+                        Logger.last_error = f"All {retries} retry attempts failed: {str(e)}"
                 except Exception as e:
                     # For other exceptions, don't retry
-                    logger.error(f"NON-RETRYABLE ERROR in {func.__name__}: {str(e)}")
+                    logger.error(f"NON-RETRYABLE ERROR: {func.__name__} - {str(e)}")
+                    # Store the error message
+                    Logger.last_error = f"Non-retryable error: {str(e)}"
                     raise
             
             # If we've exhausted all retries, log and re-raise the last exception
-            logger.error(f"RETRY FAILED: All {retries} attempts failed for {func.__name__}: {str(last_exception)}")
+            logger.error(f"RETRY FAILED: {func.__name__} - {str(last_exception)}")
             raise last_exception
         
         return wrapper
